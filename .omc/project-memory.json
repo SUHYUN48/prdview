@@ -53,7 +53,7 @@
   },
   "build": {
     "buildCommand": "cd \"C:\\Users\\ssics\\Downloads\\prdview\" && npx tsc --noEmit 2>&1 | head -60",
-    "testCommand": null,
+    "testCommand": "cd \"C:\\Users\\ssics\\Desktop\\project\\새싹\\0804 prdview\" && find . -maxdepth 2 -iname \"*.test.*\" -o -iname \"*vitest*\" -o -iname \"*jest*\" 2>/dev/null | grep -v node_modules; echo \"---\"; cat package.json | grep -A3 '\"scripts\"'",
     "lintCommand": "npm run lint",
     "devCommand": "npm run dev",
     "scripts": {
@@ -146,8 +146,8 @@
     },
     {
       "path": "src\\data\\samplePrds.ts",
-      "accessCount": 5,
-      "lastAccessed": 1785832560085,
+      "accessCount": 7,
+      "lastAccessed": 1785914000363,
       "type": "directory"
     },
     {
@@ -232,6 +232,12 @@
       "path": ".superpowers\\brainstorm\\696-1785912633\\content\\waiting-1.html",
       "accessCount": 1,
       "lastAccessed": 1785913214521,
+      "type": "file"
+    },
+    {
+      "path": "docs\\superpowers\\plans\\2026-08-05-wireframe-node-mockup.md",
+      "accessCount": 1,
+      "lastAccessed": 1785914108195,
       "type": "file"
     }
   ],
