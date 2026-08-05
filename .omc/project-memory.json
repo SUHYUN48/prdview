@@ -1,0 +1,215 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1785829462590,
+  "projectRoot": "C:\\Users\\ssics\\Downloads\\prdview",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "react",
+        "version": "19.0.1",
+        "category": "frontend"
+      },
+      {
+        "name": "react-dom",
+        "version": "19.0.1",
+        "category": "frontend"
+      },
+      {
+        "name": "vite",
+        "version": "6.2.3",
+        "category": "build"
+      },
+      {
+        "name": "express",
+        "version": "4.21.2",
+        "category": "backend"
+      },
+      {
+        "name": "esbuild",
+        "version": "0.25.0",
+        "category": "build"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "cd \"C:\\Users\\ssics\\Downloads\\prdview\" && npx tsc --noEmit 2>&1 | head -60",
+    "testCommand": null,
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "tsx server.ts",
+      "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+      "start": "node dist/server.cjs",
+      "clean": "rm -rf dist",
+      "lint": "tsc --noEmit"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": "type-based"
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "assets",
+      "src"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "assets": {
+      "path": "assets",
+      "purpose": "Static assets",
+      "fileCount": 0,
+      "lastAccessed": 1785829462532,
+      "keyFiles": []
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 4,
+      "lastAccessed": 1785829462534,
+      "keyFiles": [
+        "App.tsx",
+        "index.css",
+        "main.tsx",
+        "types.ts"
+      ]
+    },
+    "src\\components": {
+      "path": "src\\components",
+      "purpose": "UI components",
+      "fileCount": 6,
+      "lastAccessed": 1785829462551,
+      "keyFiles": [
+        "BriefingModal.tsx",
+        "MarkdownEditorPopup.tsx",
+        "ScreenCard.tsx"
+      ]
+    },
+    "src\\data": {
+      "path": "src\\data",
+      "purpose": "Data files",
+      "fileCount": 1,
+      "lastAccessed": 1785829462552,
+      "keyFiles": [
+        "samplePrds.ts"
+      ]
+    },
+    "src\\utils": {
+      "path": "src\\utils",
+      "purpose": "Utility functions",
+      "fileCount": 2,
+      "lastAccessed": 1785829462553,
+      "keyFiles": [
+        "diffEngine.ts",
+        "markdownParser.ts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src\\utils\\markdownParser.ts",
+      "accessCount": 12,
+      "lastAccessed": 1785832246162,
+      "type": "file"
+    },
+    {
+      "path": "src\\App.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1785833978625,
+      "type": "file"
+    },
+    {
+      "path": "src\\data\\samplePrds.ts",
+      "accessCount": 5,
+      "lastAccessed": 1785832560085,
+      "type": "directory"
+    },
+    {
+      "path": "src\\types.ts",
+      "accessCount": 3,
+      "lastAccessed": 1785830729024,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\ScreenCard.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1785830729063,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\WireframeNode.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1785830728312,
+      "type": "file"
+    },
+    {
+      "path": "src\\index.css",
+      "accessCount": 1,
+      "lastAccessed": 1785829971555,
+      "type": "file"
+    },
+    {
+      "path": "src\\utils\\diffEngine.ts",
+      "accessCount": 1,
+      "lastAccessed": 1785829984225,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\TocSidebar.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1785829984636,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 1,
+      "lastAccessed": 1785830097323,
+      "type": "directory"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1785830761759,
+      "type": "file"
+    },
+    {
+      "path": "server.ts",
+      "accessCount": 1,
+      "lastAccessed": 1785831150187,
+      "type": "directory"
+    },
+    {
+      "path": "src\\components\\TopHeader.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1785833251515,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

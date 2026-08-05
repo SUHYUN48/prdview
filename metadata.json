@@ -1,0 +1,6 @@
+{
+  "name": "PRDView",
+  "description": "1인 기획자를 위한 마크다운 PRD 와이어프레임 시각화 & 변경사항 브리핑 서비스",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
