@@ -9,6 +9,8 @@ import { MarkdownEditorPopup } from './components/MarkdownEditorPopup';
 import { BriefingModal } from './components/BriefingModal';
 import { Layers, FileEdit, Sparkles, HelpCircle, ArrowUp, Info } from 'lucide-react';
 
+import { ChangeLogItem } from './types';
+
 export default function App() {
   // 선택된 샘플 PRD ID
   const [selectedSampleId, setSelectedSampleId] = useState<string>('prdview-main');
@@ -28,9 +30,11 @@ export default function App() {
   const [activeScreenId, setActiveScreenId] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState<boolean>(false);
 
-  // AI 브리핑 상태
+  // AI 브리핑 상태 및 변경 로그 상태
   const [aiBriefingText, setAiBriefingText] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
+  const [changeLogs, setChangeLogs] = useState<ChangeLogItem[]>([]);
+  const lastLoggedSummaryRef = React.useRef<string>('');
 
   // 실시간 마크다운 파싱 및 Diff 계산
   const parsedCurrent = useMemo(() => {
@@ -44,6 +48,35 @@ export default function App() {
   const diffResult = useMemo(() => {
     return computePRDDiff(parsedCurrent, parsedPrevious);
   }, [parsedCurrent, parsedPrevious]);
+
+  // diffResult 변경에 따라 차이점이 발생할 때 변경 로그(ChangeLogItem)를 타임라인으로 누적
+  useEffect(() => {
+    if (diffResult.hasChanges && diffResult.summaryText !== lastLoggedSummaryRef.current) {
+      lastLoggedSummaryRef.current = diffResult.summaryText;
+
+      const now = new Date();
+      const timestamp = now.toTimeString().split(' ')[0];
+
+      const newLogItem: ChangeLogItem = {
+        id: 'log-' + Date.now(),
+        timestamp,
+        summaryText: diffResult.summaryText,
+        addedScreens: diffResult.addedScreens,
+        modifiedScreens: diffResult.modifiedScreens,
+        removedScreens: diffResult.removedScreens,
+        addedComponents: diffResult.addedComponents,
+        modifiedComponents: diffResult.modifiedComponents,
+        removedComponents: diffResult.removedComponents
+      };
+
+      setChangeLogs(prev => [newLogItem, ...prev]);
+    }
+  }, [diffResult]);
+
+  const handleClearLogs = () => {
+    setChangeLogs([]);
+    lastLoggedSummaryRef.current = '';
+  };
 
   // 첫 번째 화면을 초기 활성 화면으로 설정
   useEffect(() => {
@@ -60,6 +93,7 @@ export default function App() {
       setPreviousMarkdown(sample.markdown);
       setCurrentMarkdown(sample.markdown);
       setAiBriefingText(null);
+      handleClearLogs();
     }
   };
 
@@ -70,6 +104,7 @@ export default function App() {
       setCurrentMarkdown(sample.markdown);
       setPreviousMarkdown(sample.markdown);
       setAiBriefingText(null);
+      handleClearLogs();
     }
   };
 
@@ -228,6 +263,8 @@ export default function App() {
           markdown={currentMarkdown}
           onChangeMarkdown={(val) => setCurrentMarkdown(val)}
           summaryText={diffResult.summaryText}
+          changeLogs={changeLogs}
+          onClearLogs={handleClearLogs}
           onCopyMarkdown={handleCopyMarkdown}
           isCopied={isCopied}
           onRequestAiBriefing={handleRequestAiBriefing}

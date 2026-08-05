@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileEdit, X, Minus, Copy, Check, Sparkles, RefreshCcw, ArrowRight, BookOpen, Undo2, Redo2 } from 'lucide-react';
+import { FileEdit, X, Minus, Copy, Check, Sparkles, RefreshCcw, ArrowRight, BookOpen, Undo2, Redo2, History, Clock, Trash2 } from 'lucide-react';
+import { ChangeLogItem } from '../types';
 
 interface MarkdownEditorPopupProps {
   isOpen: boolean;
@@ -7,6 +8,8 @@ interface MarkdownEditorPopupProps {
   markdown: string;
   onChangeMarkdown: (newVal: string) => void;
   summaryText: string;
+  changeLogs: ChangeLogItem[];
+  onClearLogs: () => void;
   onCopyMarkdown: () => void;
   isCopied: boolean;
   onRequestAiBriefing: () => void;
@@ -20,6 +23,8 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
   markdown,
   onChangeMarkdown,
   summaryText,
+  changeLogs,
+  onClearLogs,
   onCopyMarkdown,
   isCopied,
   onRequestAiBriefing,
@@ -145,8 +150,8 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
                 : 'border-transparent text-[#6B7280] hover:text-[#111827]'
             }`}
           >
-            <Sparkles size={13} className="text-[#3B82F6]" />
-            <span>변경사항 브리핑</span>
+            <History size={13} className="text-[#3B82F6]" />
+            <span>변경 로그 ({changeLogs.length})</span>
           </button>
         </div>
 
@@ -209,42 +214,73 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
         </div>
       )}
 
-      {/* 변경사항 브리핑 탭 본문 */}
+      {/* 변경 로그 탭 본문 */}
       {activeTab === 'briefing' && (
         <div className="flex-1 p-4 bg-[#F9FAFB] overflow-y-auto space-y-4">
-          <div className="p-3.5 bg-white border border-[#E5E7EB] rounded-[6px] space-y-2 shadow-xs">
-            <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-2">
-              <h4 className="font-bold text-[14px] text-[#111827] flex items-center gap-1.5">
-                <Sparkles size={15} className="text-[#3B82F6]" />
-                자동 감지된 변경사항 요약
-              </h4>
+          <div className="flex items-center justify-between pb-2 border-b border-[#E5E7EB]">
+            <h4 className="font-bold text-[14px] text-[#111827] flex items-center gap-1.5">
+              <History size={15} className="text-[#3B82F6]" />
+              <span>PRD 변경 이력 (Change Log)</span>
+            </h4>
+            {changeLogs.length > 0 && (
               <button
-                onClick={onRequestAiBriefing}
-                disabled={isAiLoading}
-                className="text-[11px] font-medium text-[#3B82F6] hover:underline flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+                onClick={onClearLogs}
+                className="text-[11px] font-medium text-[#6B7280] hover:text-[#EF4444] hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <RefreshCcw size={12} className={isAiLoading ? 'animate-spin' : ''} />
-                <span>AI 브리핑 재생성</span>
+                <Trash2 size={12} />
+                <span>로그 초기화</span>
               </button>
-            </div>
-
-            <div className="text-[13px] leading-relaxed text-[#374151] whitespace-pre-wrap font-sans">
-              {summaryText || '변경 감지 중...'}
-            </div>
+            )}
           </div>
 
-          {/* AI 브리핑 카드 */}
-          {aiBriefingText && (
-            <div className="p-4 bg-[#EFF6FF] border border-[#BFDBFE] rounded-[6px] space-y-2 shadow-xs">
-              <div className="flex items-center gap-2 text-[#3B82F6] font-bold text-[13px]">
-                <Sparkles size={16} />
-                <span>AI 기획 보조 브리핑 (Gemini)</span>
-              </div>
-              <div className="text-[13px] leading-relaxed text-[#1E40AF] whitespace-pre-wrap">
-                {aiBriefingText}
-              </div>
+          {changeLogs.length === 0 ? (
+            <div className="p-8 text-center text-[#9CA3AF] space-y-2">
+              <Clock size={28} className="mx-auto text-[#D1D5DB]" />
+              <p className="text-[13px] font-semibold text-[#4B5563]">아직 감지된 변경 로그가 없습니다.</p>
+              <p className="text-[11px]">마크다운을 수정하면 변경 내역이 시간 순으로 로그로 기록됩니다.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {changeLogs.map((log, idx) => (
+                <div key={log.id} className="p-3 bg-white border border-[#E5E7EB] rounded-[6px] shadow-xs space-y-1.5">
+                  <div className="flex items-center justify-between border-b border-[#F3F4F6] pb-1.5">
+                    <span className="text-[11px] font-bold text-[#3B82F6] bg-[#EFF6FF] px-1.5 py-0.5 rounded flex items-center gap-1">
+                      <Clock size={11} />
+                      {log.timestamp}
+                    </span>
+                    <span className="text-[10px] text-[#9CA3AF] font-mono">#{changeLogs.length - idx}</span>
+                  </div>
+
+                  <div className="text-[12px] leading-relaxed text-[#374151] whitespace-pre-wrap font-sans">
+                    {log.summaryText}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
+
+          {/* AI 브리핑 카드 */}
+          <div className="pt-3 border-t border-[#E5E7EB]">
+            <button
+              onClick={onRequestAiBriefing}
+              disabled={isAiLoading}
+              className="w-full py-2 bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#3B82F6] rounded-[6px] text-[12px] font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
+            >
+              <Sparkles size={14} className={isAiLoading ? 'animate-spin' : ''} />
+              <span>{isAiLoading ? 'AI 브리핑 분석 중...' : 'AI 변경사항 요약받기 (Gemini)'}</span>
+            </button>
+            {aiBriefingText && (
+              <div className="mt-3 p-3.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-[6px] space-y-1.5 shadow-xs">
+                <div className="flex items-center gap-1.5 text-[#1E40AF] font-bold text-[12px]">
+                  <Sparkles size={14} />
+                  <span>AI 분석 결과</span>
+                </div>
+                <div className="text-[12px] leading-relaxed text-[#1E3A8A] whitespace-pre-wrap">
+                  {aiBriefingText}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -261,3 +297,4 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
     </aside>
   );
 };
+

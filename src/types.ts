@@ -56,6 +56,18 @@ export interface DiffResult {
   parsedPrevious?: ParsedPRD;
 }
 
+export interface ChangeLogItem {
+  id: string;
+  timestamp: string;
+  summaryText: string;
+  addedScreens: string[];
+  modifiedScreens: string[];
+  removedScreens: string[];
+  addedComponents: string[];
+  modifiedComponents: string[];
+  removedComponents: string[];
+}
+
 export interface SamplePRDOption {
   id: string;
   title: string;
