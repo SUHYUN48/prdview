@@ -49,38 +49,41 @@ export default function App() {
     return computePRDDiff(parsedCurrent, parsedPrevious);
   }, [parsedCurrent, parsedPrevious]);
 
-  // 마크다운 수정 시 델타(Line-by-Line Diff)를 타임라인 변경 로그로 누적
+  // 변경사항을 1개의 커밋 로그로 확정(Commit)
+  const handleCommitLog = React.useCallback(() => {
+    if (currentMarkdown === previousMarkdown) return;
+
+    const lineChanges = computeLineDiff(previousMarkdown, currentMarkdown);
+    if (lineChanges.length > 0) {
+      const now = new Date();
+      const timestamp = now.toTimeString().split(' ')[0];
+
+      const newLogItem: ChangeLogItem = {
+        id: 'log-' + Date.now(),
+        timestamp,
+        summaryText: diffResult.summaryText,
+        lineChanges,
+        addedScreens: diffResult.addedScreens,
+        modifiedScreens: diffResult.modifiedScreens,
+        removedScreens: diffResult.removedScreens,
+        addedComponents: diffResult.addedComponents,
+        modifiedComponents: diffResult.modifiedComponents,
+        removedComponents: diffResult.removedComponents
+      };
+
+      setChangeLogs(prev => [newLogItem, ...prev]);
+      setPreviousMarkdown(currentMarkdown);
+    }
+  }, [currentMarkdown, previousMarkdown, diffResult]);
+
+  // 연속 타이핑 중에는 로그를 쪼개서 생성하지 않고, 3.5초 이상 유휴 상태일 때 자동 커밋
   useEffect(() => {
-    // 마크다운 텍스트 변경 시 1초 동안 입력이 멈추면 로그에 기록 (디바운싱)
     const timer = setTimeout(() => {
-      if (currentMarkdown === previousMarkdown) return;
-
-      const lineChanges = computeLineDiff(previousMarkdown, currentMarkdown);
-      if (lineChanges.length > 0) {
-        const now = new Date();
-        const timestamp = now.toTimeString().split(' ')[0];
-
-        const newLogItem: ChangeLogItem = {
-          id: 'log-' + Date.now(),
-          timestamp,
-          summaryText: diffResult.summaryText,
-          lineChanges,
-          addedScreens: diffResult.addedScreens,
-          modifiedScreens: diffResult.modifiedScreens,
-          removedScreens: diffResult.removedScreens,
-          addedComponents: diffResult.addedComponents,
-          modifiedComponents: diffResult.modifiedComponents,
-          removedComponents: diffResult.removedComponents
-        };
-
-        setChangeLogs(prev => [newLogItem, ...prev]);
-        // 다음 변경 델타 비교를 위한 기준 텍스트 갱신
-        setPreviousMarkdown(currentMarkdown);
-      }
-    }, 800);
+      handleCommitLog();
+    }, 3500);
 
     return () => clearTimeout(timer);
-  }, [currentMarkdown, previousMarkdown, diffResult]);
+  }, [currentMarkdown, handleCommitLog]);
 
   const handleClearLogs = () => {
     setChangeLogs([]);
@@ -274,6 +277,7 @@ export default function App() {
           summaryText={diffResult.summaryText}
           changeLogs={changeLogs}
           onClearLogs={handleClearLogs}
+          onCommitLog={handleCommitLog}
           onCopyMarkdown={handleCopyMarkdown}
           isCopied={isCopied}
           onRequestAiBriefing={handleRequestAiBriefing}

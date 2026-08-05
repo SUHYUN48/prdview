@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1785829462590,
-  "projectRoot": "C:\\Users\\ssics\\Downloads\\prdview",
+  "lastScanned": 1785921634081,
+  "projectRoot": "c:\\Users\\ssics\\Desktop\\project\\새싹\\0804 prdview",
   "techStack": {
     "languages": [
       {
@@ -52,8 +52,8 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "cd \"C:\\Users\\ssics\\Downloads\\prdview\" && npx tsc --noEmit 2>&1 | head -60",
-    "testCommand": "cd \"C:\\Users\\ssics\\Desktop\\project\\새싹\\0804 prdview\" && find . -maxdepth 2 -iname \"*.test.*\" -o -iname \"*vitest*\" -o -iname \"*jest*\" 2>/dev/null | grep -v node_modules; echo \"---\"; cat package.json | grep -A3 '\"scripts\"'",
+    "buildCommand": "npm run build",
+    "testCommand": null,
     "lintCommand": "npm run lint",
     "devCommand": "npm run dev",
     "scripts": {
@@ -75,6 +75,8 @@
     "workspaces": [],
     "mainDirectories": [
       "assets",
+      "docs",
+      "public",
       "src"
     ],
     "gitBranches": null
@@ -85,14 +87,42 @@
       "path": "assets",
       "purpose": "Static assets",
       "fileCount": 0,
-      "lastAccessed": 1785829462532,
+      "lastAccessed": 1785921634015,
       "keyFiles": []
+    },
+    "dist": {
+      "path": "dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 3,
+      "lastAccessed": 1785921634016,
+      "keyFiles": [
+        "index.html",
+        "server.cjs",
+        "server.cjs.map"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 0,
+      "lastAccessed": 1785921634032,
+      "keyFiles": []
+    },
+    "public": {
+      "path": "public",
+      "purpose": "Public files",
+      "fileCount": 2,
+      "lastAccessed": 1785921634033,
+      "keyFiles": [
+        "favicon.png",
+        "favicon.svg"
+      ]
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
       "fileCount": 4,
-      "lastAccessed": 1785829462534,
+      "lastAccessed": 1785921634036,
       "keyFiles": [
         "App.tsx",
         "index.css",
@@ -100,11 +130,21 @@
         "types.ts"
       ]
     },
+    "dist\\assets": {
+      "path": "dist\\assets",
+      "purpose": "Static assets",
+      "fileCount": 2,
+      "lastAccessed": 1785921634039,
+      "keyFiles": [
+        "index-Bo09kEDb.css",
+        "index-C4MWKJne.js"
+      ]
+    },
     "src\\components": {
       "path": "src\\components",
       "purpose": "UI components",
       "fileCount": 6,
-      "lastAccessed": 1785829462551,
+      "lastAccessed": 1785921634041,
       "keyFiles": [
         "BriefingModal.tsx",
         "MarkdownEditorPopup.tsx",
@@ -115,7 +155,7 @@
       "path": "src\\data",
       "purpose": "Data files",
       "fileCount": 1,
-      "lastAccessed": 1785829462552,
+      "lastAccessed": 1785921634042,
       "keyFiles": [
         "samplePrds.ts"
       ]
@@ -124,7 +164,7 @@
       "path": "src\\utils",
       "purpose": "Utility functions",
       "fileCount": 2,
-      "lastAccessed": 1785829462553,
+      "lastAccessed": 1785921634043,
       "keyFiles": [
         "diffEngine.ts",
         "markdownParser.ts"
@@ -134,14 +174,14 @@
   "hotPaths": [
     {
       "path": "src\\utils\\markdownParser.ts",
-      "accessCount": 12,
-      "lastAccessed": 1785832246162,
+      "accessCount": 13,
+      "lastAccessed": 1785921899820,
       "type": "file"
     },
     {
       "path": "src\\App.tsx",
-      "accessCount": 7,
-      "lastAccessed": 1785911984460,
+      "accessCount": 8,
+      "lastAccessed": 1785921899366,
       "type": "file"
     },
     {
@@ -151,21 +191,21 @@
       "type": "directory"
     },
     {
-      "path": "src\\components\\ScreenCard.tsx",
-      "accessCount": 4,
-      "lastAccessed": 1785911984976,
+      "path": "src\\types.ts",
+      "accessCount": 5,
+      "lastAccessed": 1785921891838,
       "type": "file"
     },
     {
-      "path": "src\\types.ts",
-      "accessCount": 4,
-      "lastAccessed": 1785912414841,
+      "path": "src\\components\\ScreenCard.tsx",
+      "accessCount": 5,
+      "lastAccessed": 1785921892670,
       "type": "file"
     },
     {
       "path": "src\\components\\WireframeNode.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1785911985309,
+      "accessCount": 4,
+      "lastAccessed": 1785921892535,
       "type": "file"
     },
     {

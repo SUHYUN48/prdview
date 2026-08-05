@@ -10,6 +10,7 @@ interface MarkdownEditorPopupProps {
   summaryText: string;
   changeLogs: ChangeLogItem[];
   onClearLogs: () => void;
+  onCommitLog?: () => void;
   onCopyMarkdown: () => void;
   isCopied: boolean;
   onRequestAiBriefing: () => void;
@@ -25,6 +26,7 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
   summaryText,
   changeLogs,
   onClearLogs,
+  onCommitLog,
   onCopyMarkdown,
   isCopied,
   onRequestAiBriefing,
@@ -85,6 +87,17 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
     }
   };
 
+  const lastCursorPosRef = useRef<number | null>(null);
+
+  const handleCursorOrBlurCheck = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+    const target = e.currentTarget;
+    if (lastCursorPosRef.current !== null && lastCursorPosRef.current !== target.selectionStart) {
+      // 커서 위치 이동이 일어난 경우 지금까지의 수정을 1개의 변경 로그로 커밋
+      onCommitLog?.();
+    }
+    lastCursorPosRef.current = target.selectionStart;
+  };
+
   const lineCount = markdown.split('\n').length;
   const wordCount = markdown.trim() ? markdown.trim().split(/\s+/).length : 0;
 
@@ -133,7 +146,10 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
       <div className="flex items-center justify-between border-b border-[#E5E7EB] bg-[#F9FAFB] px-3 pt-2 text-[13px] shrink-0">
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setActiveTab('editor')}
+            onClick={() => {
+              onCommitLog?.();
+              setActiveTab('editor');
+            }}
             className={`px-3 py-1.5 font-bold rounded-t-[4px] border-t border-x transition-all ${
               activeTab === 'editor'
                 ? 'bg-white border-[#E5E7EB] border-b-white text-[#111827]'
@@ -143,7 +159,10 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
             마크다운 작성/수정
           </button>
           <button
-            onClick={() => setActiveTab('briefing')}
+            onClick={() => {
+              onCommitLog?.();
+              setActiveTab('briefing');
+            }}
             className={`px-3 py-1.5 font-bold rounded-t-[4px] border-t border-x transition-all flex items-center gap-1.5 ${
               activeTab === 'briefing'
                 ? 'bg-white border-[#E5E7EB] border-b-white text-[#111827]'
@@ -207,6 +226,9 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
             value={markdown}
             onChange={(e) => onChangeMarkdown(e.target.value)}
             onKeyDown={handleKeyDown}
+            onBlur={() => onCommitLog?.()}
+            onClick={handleCursorOrBlurCheck}
+            onKeyUp={handleCursorOrBlurCheck}
             placeholder="마크다운 PRD를 입력하거나 수정하세요... (예: ├─ QuoteCard)"
             className="flex-1 w-full p-3 font-mono text-[13px] leading-relaxed text-[#1F2937] bg-[#F9FAFB] border border-[#E5E7EB] rounded-[4px] focus:outline-none focus:border-[#3B82F6] focus:bg-white resize-none"
             spellCheck={false}
