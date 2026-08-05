@@ -181,6 +181,12 @@
       "type": "file"
     },
     {
+      "path": "docs\\superpowers\\specs\\2026-08-05-wireframe-node-mockup-design.md",
+      "accessCount": 2,
+      "lastAccessed": 1785913454959,
+      "type": "file"
+    },
+    {
       "path": "src\\utils\\diffEngine.ts",
       "accessCount": 1,
       "lastAccessed": 1785829984225,

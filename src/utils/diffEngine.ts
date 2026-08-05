@@ -1,4 +1,4 @@
-import { ParsedPRD, ScreenSection, WireframeNodeData, DiffResult, DiffStatus } from '../types';
+import { ParsedPRD, ScreenSection, WireframeNodeData, DiffResult, DiffStatus, LineChangeItem } from '../types';
 
 /**
  * PRD 변경 사항 비교(Visual Diff) 및 브리핑 요약 엔진
@@ -157,45 +157,101 @@ function diffNodeTrees(
 }
 
 /**
-  * 마크다운 텍스트 줄 단위(Line-by-Line) 차이점 계산
-  */
-export function computeLineDiff(oldText: string, newText: string) {
+ * 마크다운 텍스트 줄 단위(Line-by-Line) 차이점 계산 (LCS 알고리즘 사용)
+ */
+export function computeLineDiff(oldText: string, newText: string): LineChangeItem[] {
   const oldLines = oldText ? oldText.split('\n') : [];
   const newLines = newText ? newText.split('\n') : [];
-  const changes = [];
 
-  const maxLen = Math.max(oldLines.length, newLines.length);
+  const M = oldLines.length;
+  const N = newLines.length;
 
-  for (let i = 0; i < maxLen; i++) {
-    const oldLine = oldLines[i];
-    const newLine = newLines[i];
+  if (M === 0 && N === 0) return [];
 
-    if (oldLine !== undefined && newLine !== undefined) {
-      if (oldLine !== newLine) {
-        changes.push({
-          lineNo: i + 1,
-          type: 'modified' as const,
-          before: oldLine,
-          after: newLine
-        });
+  // DP 테이블 (Longest Common Subsequence - 최장 공통 부분 수열)
+  const dp: number[][] = Array.from({ length: M + 1 }, () => Array(N + 1).fill(0));
+
+  for (let i = 1; i <= M; i++) {
+    for (let j = 1; j <= N; j++) {
+      if (oldLines[i - 1] === newLines[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
-    } else if (oldLine !== undefined && newLine === undefined) {
+    }
+  }
+
+  // 역추적(Backtracking)하여 diff 기록
+  let i = M;
+  let j = N;
+  interface RawDiffNode {
+    type: 'unchanged' | 'added' | 'removed';
+    oldIdx?: number;
+    newIdx?: number;
+    text: string;
+  }
+  const rawDiff: RawDiffNode[] = [];
+
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+      rawDiff.push({ type: 'unchanged', oldIdx: i - 1, newIdx: j - 1, text: oldLines[i - 1] });
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      rawDiff.push({ type: 'added', newIdx: j - 1, text: newLines[j - 1] });
+      j--;
+    } else if (i > 0 && (j === 0 || dp[i][j - 1] < dp[i - 1][j])) {
+      rawDiff.push({ type: 'removed', oldIdx: i - 1, text: oldLines[i - 1] });
+      i--;
+    }
+  }
+
+  rawDiff.reverse();
+
+  // rawDiff 중 변경 사항만 LineChangeItem으로 묶어 추출
+  const changes: LineChangeItem[] = [];
+  let k = 0;
+
+  while (k < rawDiff.length) {
+    const item = rawDiff[k];
+
+    if (item.type === 'unchanged') {
+      k++;
+      continue;
+    }
+
+    // 연속된 removed + added 쌍은 modified(수정)로 합침
+    if (item.type === 'removed' && k + 1 < rawDiff.length && rawDiff[k + 1].type === 'added') {
+      const lineNo = (item.oldIdx ?? 0) + 1;
       changes.push({
-        lineNo: i + 1,
-        type: 'removed' as const,
-        before: oldLine,
+        lineNo,
+        type: 'modified',
+        before: item.text,
+        after: rawDiff[k + 1].text
+      });
+      k += 2;
+    } else if (item.type === 'removed') {
+      const lineNo = (item.oldIdx ?? 0) + 1;
+      changes.push({
+        lineNo,
+        type: 'removed',
+        before: item.text,
         after: ''
       });
-    } else if (oldLine === undefined && newLine !== undefined) {
+      k++;
+    } else if (item.type === 'added') {
+      const lineNo = (item.newIdx ?? 0) + 1;
       changes.push({
-        lineNo: i + 1,
-        type: 'added' as const,
+        lineNo,
+        type: 'added',
         before: '',
-        after: newLine
+        after: item.text
       });
+      k++;
     }
   }
 
   return changes;
 }
+
 

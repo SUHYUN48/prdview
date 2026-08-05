@@ -49,31 +49,38 @@ export default function App() {
     return computePRDDiff(parsedCurrent, parsedPrevious);
   }, [parsedCurrent, parsedPrevious]);
 
-  // diffResult 변경에 따라 차이점이 발생할 때 변경 로그(ChangeLogItem)를 타임라인으로 누적
+  // 마크다운 수정 시 델타(Line-by-Line Diff)를 타임라인 변경 로그로 누적
   useEffect(() => {
-    if (diffResult.hasChanges && diffResult.summaryText !== lastLoggedSummaryRef.current) {
-      lastLoggedSummaryRef.current = diffResult.summaryText;
+    // 마크다운 텍스트 변경 시 1초 동안 입력이 멈추면 로그에 기록 (디바운싱)
+    const timer = setTimeout(() => {
+      if (currentMarkdown === previousMarkdown) return;
 
-      const now = new Date();
-      const timestamp = now.toTimeString().split(' ')[0];
       const lineChanges = computeLineDiff(previousMarkdown, currentMarkdown);
+      if (lineChanges.length > 0) {
+        const now = new Date();
+        const timestamp = now.toTimeString().split(' ')[0];
 
-      const newLogItem: ChangeLogItem = {
-        id: 'log-' + Date.now(),
-        timestamp,
-        summaryText: diffResult.summaryText,
-        lineChanges,
-        addedScreens: diffResult.addedScreens,
-        modifiedScreens: diffResult.modifiedScreens,
-        removedScreens: diffResult.removedScreens,
-        addedComponents: diffResult.addedComponents,
-        modifiedComponents: diffResult.modifiedComponents,
-        removedComponents: diffResult.removedComponents
-      };
+        const newLogItem: ChangeLogItem = {
+          id: 'log-' + Date.now(),
+          timestamp,
+          summaryText: diffResult.summaryText,
+          lineChanges,
+          addedScreens: diffResult.addedScreens,
+          modifiedScreens: diffResult.modifiedScreens,
+          removedScreens: diffResult.removedScreens,
+          addedComponents: diffResult.addedComponents,
+          modifiedComponents: diffResult.modifiedComponents,
+          removedComponents: diffResult.removedComponents
+        };
 
-      setChangeLogs(prev => [newLogItem, ...prev]);
-    }
-  }, [diffResult, previousMarkdown, currentMarkdown]);
+        setChangeLogs(prev => [newLogItem, ...prev]);
+        // 다음 변경 델타 비교를 위한 기준 텍스트 갱신
+        setPreviousMarkdown(currentMarkdown);
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [currentMarkdown, previousMarkdown, diffResult]);
 
   const handleClearLogs = () => {
     setChangeLogs([]);
