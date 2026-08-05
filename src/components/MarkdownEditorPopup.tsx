@@ -251,19 +251,9 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
                     <span className="text-[10px] text-[#9CA3AF] font-mono font-semibold">#{changeLogs.length - idx}</span>
                   </div>
 
-                  {/* 구조 변경 요약 */}
-                  <div className="text-[12px] leading-relaxed text-[#374151] font-sans">
-                    {log.summaryText}
-                  </div>
-
                   {/* 라인 단위 상세 변경내역 (몇줄 / before: 원래 내용 / after: 변경 내용) */}
                   {log.lineChanges && log.lineChanges.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-[#F3F4F6] space-y-2">
-                      <div className="text-[11px] font-bold text-[#4B5563] flex items-center justify-between">
-                        <span>줄 단위 변경 내역</span>
-                        <span className="text-[10px] font-mono text-[#9CA3AF]">총 {log.lineChanges.length}건</span>
-                      </div>
-
+                    <div className="space-y-2">
                       <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
                         {log.lineChanges.slice(0, 20).map((change, i) => (
                           <div key={i} className="p-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded font-mono text-[11px] space-y-1">
