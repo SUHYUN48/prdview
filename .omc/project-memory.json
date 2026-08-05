@@ -140,8 +140,8 @@
     },
     {
       "path": "src\\App.tsx",
-      "accessCount": 6,
-      "lastAccessed": 1785833978625,
+      "accessCount": 7,
+      "lastAccessed": 1785911984460,
       "type": "file"
     },
     {
@@ -151,27 +151,33 @@
       "type": "directory"
     },
     {
-      "path": "src\\types.ts",
-      "accessCount": 3,
-      "lastAccessed": 1785830729024,
+      "path": "src\\components\\ScreenCard.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1785911984976,
       "type": "file"
     },
     {
-      "path": "src\\components\\ScreenCard.tsx",
-      "accessCount": 3,
-      "lastAccessed": 1785830729063,
+      "path": "src\\types.ts",
+      "accessCount": 4,
+      "lastAccessed": 1785912414841,
       "type": "file"
     },
     {
       "path": "src\\components\\WireframeNode.tsx",
+      "accessCount": 3,
+      "lastAccessed": 1785911985309,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
       "accessCount": 2,
-      "lastAccessed": 1785830728312,
+      "lastAccessed": 1785911999929,
       "type": "file"
     },
     {
       "path": "src\\index.css",
-      "accessCount": 1,
-      "lastAccessed": 1785829971555,
+      "accessCount": 2,
+      "lastAccessed": 1785912240948,
       "type": "file"
     },
     {
@@ -191,12 +197,6 @@
       "accessCount": 1,
       "lastAccessed": 1785830097323,
       "type": "directory"
-    },
-    {
-      "path": "package.json",
-      "accessCount": 1,
-      "lastAccessed": 1785830761759,
-      "type": "file"
     },
     {
       "path": "server.ts",
