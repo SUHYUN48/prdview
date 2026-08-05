@@ -138,8 +138,6 @@ export default function App() {
         onToggleHighlightDiff={() => setHighlightDiff(!highlightDiff)}
         isEditorOpen={isEditorOpen}
         onToggleEditor={() => setIsEditorOpen(!isEditorOpen)}
-        onCopyMarkdown={handleCopyMarkdown}
-        isCopied={isCopied}
         onOpenBriefingModal={() => setIsBriefingModalOpen(true)}
         onResetToSample={handleResetToSample}
       />

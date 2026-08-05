@@ -1,6 +1,6 @@
 import React from 'react';
 import { SamplePRDOption } from '../types';
-import { Layers, FileEdit, Sparkles, Copy, Check, Eye, HelpCircle, RefreshCw } from 'lucide-react';
+import { Layers, FileEdit, Sparkles, Eye, RefreshCw } from 'lucide-react';
 
 interface TopHeaderProps {
   appTitle: string;
@@ -11,8 +11,6 @@ interface TopHeaderProps {
   onToggleHighlightDiff: () => void;
   isEditorOpen: boolean;
   onToggleEditor: () => void;
-  onCopyMarkdown: () => void;
-  isCopied: boolean;
   onOpenBriefingModal: () => void;
   onResetToSample: () => void;
 }
@@ -26,8 +24,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onToggleHighlightDiff,
   isEditorOpen,
   onToggleEditor,
-  onCopyMarkdown,
-  isCopied,
   onOpenBriefingModal,
   onResetToSample
 }) => {
@@ -102,24 +98,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           <span className="hidden sm:inline">AI Briefing</span>
         </button>
 
-        {/* 마크다운 복사하기 (AI 에이전트 전달용) */}
-        <button
-          onClick={onCopyMarkdown}
-          className="px-3.5 py-1.5 rounded-[6px] text-[12px] font-semibold bg-[#3B82F6] text-white hover:bg-[#2563EB] transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
-          title="AI 코딩 에이전에 전달할 마크다운 복사"
-        >
-          {isCopied ? (
-            <>
-              <Check size={14} />
-              <span>복사완료!</span>
-            </>
-          ) : (
-            <>
-              <Copy size={14} />
-              <span className="hidden sm:inline">Copy Markdown for AI</span>
-            </>
-          )}
-        </button>
 
         {/* 마크다운 에디터 토글 버튼 */}
         <button
