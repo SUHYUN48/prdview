@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FileEdit, X, Minus, Copy, Check, Sparkles, RefreshCcw, ArrowRight, BookOpen } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FileEdit, X, Minus, Copy, Check, Sparkles, RefreshCcw, ArrowRight, BookOpen, Undo2, Redo2 } from 'lucide-react';
 
 interface MarkdownEditorPopupProps {
   isOpen: boolean;
@@ -27,6 +27,58 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
   aiBriefingText
 }) => {
   const [activeTab, setActiveTab] = useState<'editor' | 'briefing'>('editor');
+
+  // 마크다운 수정 히스토리 (Undo / Redo 기능)
+  const [history, setHistory] = useState<string[]>([markdown]);
+  const [historyIndex, setHistoryIndex] = useState<number>(0);
+  const isInternalUpdateRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (isInternalUpdateRef.current) {
+      isInternalUpdateRef.current = false;
+      return;
+    }
+    if (history[historyIndex] !== markdown) {
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(markdown);
+      if (newHistory.length > 50) newHistory.shift();
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+  }, [markdown]);
+
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const prevIndex = historyIndex - 1;
+      isInternalUpdateRef.current = true;
+      setHistoryIndex(prevIndex);
+      onChangeMarkdown(history[prevIndex]);
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyIndex < history.length - 1) {
+      const nextIndex = historyIndex + 1;
+      isInternalUpdateRef.current = true;
+      setHistoryIndex(nextIndex);
+      onChangeMarkdown(history[nextIndex]);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      if (e.shiftKey) {
+        e.preventDefault();
+        handleRedo();
+      } else {
+        e.preventDefault();
+        handleUndo();
+      }
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+      e.preventDefault();
+      handleRedo();
+    }
+  };
 
   const lineCount = markdown.split('\n').length;
   const wordCount = markdown.trim() ? markdown.trim().split(/\s+/).length : 0;
@@ -113,15 +165,43 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
       {/* 에디터 탭 본문 */}
       {activeTab === 'editor' && (
         <div className="flex-1 p-3 flex flex-col bg-white overflow-hidden">
-          <p className="text-[11px] text-[#6B7280] mb-2 flex items-center gap-1 shrink-0">
-            <BookOpen size={12} className="text-[#3B82F6]" />
-            <span>
-              마크다운을 수정하면 캔버스 와이어프레임이 <strong>실시간 동기화</strong>됩니다.
-            </span>
-          </p>
+          <div className="flex items-center justify-between mb-2 shrink-0">
+            <p className="text-[11px] text-[#6B7280] flex items-center gap-1">
+              <BookOpen size={12} className="text-[#3B82F6]" />
+              <span>
+                마크다운 수정 시 와이어프레임 <strong>실시간 동기화</strong>
+              </span>
+            </p>
+
+            {/* 실행 취소(Undo) / 다시 실행(Redo) 버튼 */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={historyIndex <= 0}
+                className="px-2 py-0.5 rounded-[4px] text-[11px] font-medium text-[#4B5563] bg-[#F9FAFB] hover:text-[#111827] hover:bg-[#F3F4F6] disabled:opacity-30 disabled:cursor-not-allowed border border-[#E5E7EB] transition-all flex items-center gap-1 cursor-pointer"
+                title="실행 취소 (Undo) - Ctrl+Z"
+              >
+                <Undo2 size={12} />
+                <span>뒤로가기</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleRedo}
+                disabled={historyIndex >= history.length - 1}
+                className="px-2 py-0.5 rounded-[4px] text-[11px] font-medium text-[#4B5563] bg-[#F9FAFB] hover:text-[#111827] hover:bg-[#F3F4F6] disabled:opacity-30 disabled:cursor-not-allowed border border-[#E5E7EB] transition-all flex items-center gap-1 cursor-pointer"
+                title="다시 실행 (Redo) - Ctrl+Y"
+              >
+                <Redo2 size={12} />
+                <span>되돌리기</span>
+              </button>
+            </div>
+          </div>
+
           <textarea
             value={markdown}
             onChange={(e) => onChangeMarkdown(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="마크다운 PRD를 입력하거나 수정하세요... (예: ├─ QuoteCard)"
             className="flex-1 w-full p-3 font-mono text-[13px] leading-relaxed text-[#1F2937] bg-[#F9FAFB] border border-[#E5E7EB] rounded-[4px] focus:outline-none focus:border-[#3B82F6] focus:bg-white resize-none"
             spellCheck={false}
