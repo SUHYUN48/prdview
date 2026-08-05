@@ -242,18 +242,65 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
           ) : (
             <div className="space-y-3">
               {changeLogs.map((log, idx) => (
-                <div key={log.id} className="p-3 bg-white border border-[#E5E7EB] rounded-[6px] shadow-xs space-y-1.5">
+                <div key={log.id} className="p-3.5 bg-white border border-[#E5E7EB] rounded-[6px] shadow-xs space-y-2">
                   <div className="flex items-center justify-between border-b border-[#F3F4F6] pb-1.5">
-                    <span className="text-[11px] font-bold text-[#3B82F6] bg-[#EFF6FF] px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <span className="text-[11px] font-bold text-[#3B82F6] bg-[#EFF6FF] px-2 py-0.5 rounded flex items-center gap-1">
                       <Clock size={11} />
                       {log.timestamp}
                     </span>
-                    <span className="text-[10px] text-[#9CA3AF] font-mono">#{changeLogs.length - idx}</span>
+                    <span className="text-[10px] text-[#9CA3AF] font-mono font-semibold">#{changeLogs.length - idx}</span>
                   </div>
 
-                  <div className="text-[12px] leading-relaxed text-[#374151] whitespace-pre-wrap font-sans">
+                  {/* 구조 변경 요약 */}
+                  <div className="text-[12px] leading-relaxed text-[#374151] font-sans">
                     {log.summaryText}
                   </div>
+
+                  {/* 라인 단위 상세 변경내역 (몇줄 / before: 원래 내용 / after: 변경 내용) */}
+                  {log.lineChanges && log.lineChanges.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-[#F3F4F6] space-y-2">
+                      <div className="text-[11px] font-bold text-[#4B5563] flex items-center justify-between">
+                        <span>줄 단위 변경 내역</span>
+                        <span className="text-[10px] font-mono text-[#9CA3AF]">총 {log.lineChanges.length}건</span>
+                      </div>
+
+                      <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                        {log.lineChanges.slice(0, 20).map((change, i) => (
+                          <div key={i} className="p-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded font-mono text-[11px] space-y-1">
+                            <div className="font-bold text-[#2563EB] flex items-center justify-between text-[10px]">
+                              <span>{change.lineNo}번째 줄</span>
+                              <span className={`px-1 py-0.2 rounded font-semibold uppercase ${
+                                change.type === 'added' ? 'bg-[#DCFCE7] text-[#15803D]' :
+                                change.type === 'removed' ? 'bg-[#FEE2E2] text-[#B91C1C]' :
+                                'bg-[#FEF3C7] text-[#B45309]'
+                              }`}>
+                                {change.type === 'added' ? '추가됨' : change.type === 'removed' ? '삭제됨' : '수정됨'}
+                              </span>
+                            </div>
+
+                            {change.type !== 'added' && (
+                              <div className="text-[#991B1B] bg-[#FEF2F2] px-2 py-1 rounded whitespace-pre-wrap border border-[#FCA5A5]/40 leading-snug break-all">
+                                <span className="font-bold select-none text-[#7F1D1D] mr-1">before:</span>
+                                {change.before || '(빈 줄)'}
+                              </div>
+                            )}
+
+                            {change.type !== 'removed' && (
+                              <div className="text-[#166534] bg-[#F0FDF4] px-2 py-1 rounded whitespace-pre-wrap border border-[#86EFAC]/40 leading-snug break-all">
+                                <span className="font-bold select-none text-[#14532D] mr-1">after: </span>
+                                {change.after || '(빈 줄)'}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {log.lineChanges.length > 20 && (
+                          <div className="text-[10px] text-center text-[#6B7280] py-1">
+                            ...외 {log.lineChanges.length - 20}개 줄 변경 생략
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

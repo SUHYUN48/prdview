@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { SAMPLE_PRDS } from './data/samplePrds';
 import { parsePRDMarkdown } from './utils/markdownParser';
-import { computePRDDiff } from './utils/diffEngine';
+import { computePRDDiff, computeLineDiff } from './utils/diffEngine';
 import { TopHeader } from './components/TopHeader';
 import { TocSidebar } from './components/TocSidebar';
 import { ScreenCard } from './components/ScreenCard';
@@ -56,11 +56,13 @@ export default function App() {
 
       const now = new Date();
       const timestamp = now.toTimeString().split(' ')[0];
+      const lineChanges = computeLineDiff(previousMarkdown, currentMarkdown);
 
       const newLogItem: ChangeLogItem = {
         id: 'log-' + Date.now(),
         timestamp,
         summaryText: diffResult.summaryText,
+        lineChanges,
         addedScreens: diffResult.addedScreens,
         modifiedScreens: diffResult.modifiedScreens,
         removedScreens: diffResult.removedScreens,
@@ -71,7 +73,7 @@ export default function App() {
 
       setChangeLogs(prev => [newLogItem, ...prev]);
     }
-  }, [diffResult]);
+  }, [diffResult, previousMarkdown, currentMarkdown]);
 
   const handleClearLogs = () => {
     setChangeLogs([]);

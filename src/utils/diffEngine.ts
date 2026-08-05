@@ -155,3 +155,47 @@ function diffNodeTrees(
 
   return isChanged;
 }
+
+/**
+  * 마크다운 텍스트 줄 단위(Line-by-Line) 차이점 계산
+  */
+export function computeLineDiff(oldText: string, newText: string) {
+  const oldLines = oldText ? oldText.split('\n') : [];
+  const newLines = newText ? newText.split('\n') : [];
+  const changes = [];
+
+  const maxLen = Math.max(oldLines.length, newLines.length);
+
+  for (let i = 0; i < maxLen; i++) {
+    const oldLine = oldLines[i];
+    const newLine = newLines[i];
+
+    if (oldLine !== undefined && newLine !== undefined) {
+      if (oldLine !== newLine) {
+        changes.push({
+          lineNo: i + 1,
+          type: 'modified' as const,
+          before: oldLine,
+          after: newLine
+        });
+      }
+    } else if (oldLine !== undefined && newLine === undefined) {
+      changes.push({
+        lineNo: i + 1,
+        type: 'removed' as const,
+        before: oldLine,
+        after: ''
+      });
+    } else if (oldLine === undefined && newLine !== undefined) {
+      changes.push({
+        lineNo: i + 1,
+        type: 'added' as const,
+        before: '',
+        after: newLine
+      });
+    }
+  }
+
+  return changes;
+}
+

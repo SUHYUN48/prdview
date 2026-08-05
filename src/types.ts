@@ -56,10 +56,18 @@ export interface DiffResult {
   parsedPrevious?: ParsedPRD;
 }
 
+export interface LineChangeItem {
+  lineNo: number;
+  type: 'added' | 'modified' | 'removed';
+  before: string;
+  after: string;
+}
+
 export interface ChangeLogItem {
   id: string;
   timestamp: string;
   summaryText: string;
+  lineChanges: LineChangeItem[];
   addedScreens: string[];
   modifiedScreens: string[];
   removedScreens: string[];
