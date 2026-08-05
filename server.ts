@@ -52,10 +52,18 @@ ${JSON.stringify(diffSummary || {}, null, 2)}
 4. 불필요한 사족 없이 명확하고 신속하게 읽히도록 작성.
 `;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt
-      });
+      let response;
+      try {
+        response = await ai.models.generateContent({
+          model: 'gemini-2.0-flash',
+          contents: prompt
+        });
+      } catch (modelErr) {
+        response = await ai.models.generateContent({
+          model: 'gemini-1.5-flash',
+          contents: prompt
+        });
+      }
 
       const text = response.text || '변경 사항 브리핑을 생성하지 못했습니다.';
       res.json({ success: true, source: 'gemini', briefing: text });
