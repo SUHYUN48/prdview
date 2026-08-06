@@ -1,11 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { FileEdit, X, Minus, Copy, Check, Sparkles, RefreshCcw, ArrowRight, BookOpen, Undo2, Redo2, History, Clock, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { FileEdit, X, Minus, Copy, Check, Sparkles, RefreshCcw, ArrowRight, BookOpen, Undo2, Redo2, History, Clock, Trash2, ChevronLeft } from 'lucide-react';
 import { ChangeLogItem } from '../types';
+import { computeLineDiff } from '../utils/diffEngine';
 
 interface MarkdownEditorPopupProps {
   isOpen: boolean;
   onClose: () => void;
   markdown: string;
+  /** 세션 시작 시점 마크다운 (diff 기준선, 자동 커밋으로 갱신 안 됨) */
+  baselineMarkdown?: string;
   onChangeMarkdown: (newVal: string) => void;
   summaryText: string;
   changeLogs: ChangeLogItem[];
@@ -22,6 +25,7 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
   isOpen,
   onClose,
   markdown,
+  baselineMarkdown,
   onChangeMarkdown,
   summaryText,
   changeLogs,
@@ -88,6 +92,19 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
   };
 
   const lastCursorPosRef = useRef<number | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const gutterRef = useRef<HTMLDivElement>(null);
+
+  // textarea 너비 추적 (줄 높이 측정에 필요)
+  const [textareaWidth, setTextareaWidth] = useState(400);
+  useEffect(() => {
+    if (!textareaRef.current) return;
+    const ro = new ResizeObserver(entries => {
+      setTextareaWidth(entries[0].contentRect.width);
+    });
+    ro.observe(textareaRef.current);
+    return () => ro.disconnect();
+  }, [isOpen]); // isOpen 변경 시 재연결
 
   const handleCursorOrBlurCheck = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
     const target = e.currentTarget;
@@ -98,7 +115,49 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
     lastCursorPosRef.current = target.selectionStart;
   };
 
-  const lineCount = markdown.split('\n').length;
+  // 스크롤 동기화: textarea ↔ 거터
+  const handleScroll = useCallback(() => {
+    if (textareaRef.current && gutterRef.current) {
+      gutterRef.current.scrollTop = textareaRef.current.scrollTop;
+    }
+  }, []);
+
+  // 각 논리 줄의 실제 렌더 높이 계산 (소프트 랩 반영)
+  // 숨겨진 div로 측정: 엔터만 줄 구분, 긴 텍스트는 동일 줄로 취급
+  const currentLines = markdown.split('\n');
+  const LINE_HEIGHT = 21;
+  const TEXTAREA_PADDING = 12; // p-3 = 12px
+  const lineHeights = useMemo(() => {
+    const el = document.createElement('div');
+    el.style.cssText = [
+      'position:fixed', 'top:-9999px', 'left:-9999px',
+      'visibility:hidden', 'overflow:hidden', 'pointer-events:none',
+      'font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace',
+      'font-size:13px', `line-height:${LINE_HEIGHT}px`,
+      'white-space:pre-wrap', 'word-break:break-all',
+      `width:${Math.max(textareaWidth - TEXTAREA_PADDING * 2, 60)}px`,
+    ].join(';');
+    document.body.appendChild(el);
+    const heights = currentLines.map(line => {
+      el.textContent = line || '\u00A0'; // 빈 줄도 최소 높이 보장
+      return Math.max(el.offsetHeight, LINE_HEIGHT);
+    });
+    document.body.removeChild(el);
+    return heights;
+  }, [currentLines, textareaWidth]);
+
+  // VSCode 스타일 라인 diff 계산 (baselineMarkdown 기준, 세션 내내 유지)
+  const lineDiffMap = useMemo(() => {
+    if (!baselineMarkdown || baselineMarkdown === markdown) return new Map<number, 'added' | 'modified'>();
+    const changes = computeLineDiff(baselineMarkdown, markdown);
+    const map = new Map<number, 'added' | 'modified'>();
+    changes.forEach(c => {
+      if (c.type !== 'removed') map.set(c.lineNo, c.type);
+    });
+    return map;
+  }, [baselineMarkdown, markdown]);
+
+  const lineCount = currentLines.length;
   const wordCount = markdown.trim() ? markdown.trim().split(/\s+/).length : 0;
 
   // 패널이 접혀있는 경우 슬림한 세로 토글 바 표시
@@ -106,14 +165,25 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
     return (
       <aside
         onClick={onClose}
-        className="w-10 shrink-0 border-l border-[#E5E7EB] bg-[#F9FAFB] hover:bg-[#F3F4F6] sticky top-14 h-[calc(100vh-3.5rem)] flex flex-col items-center py-4 cursor-pointer transition-colors z-20 group"
+        className="w-11 shrink-0 border-l border-[#E5E7EB] bg-[#F9FAFB] hover:bg-[#F3F4F6] sticky top-14 h-[calc(100vh-3.5rem)] flex flex-col items-center py-4 cursor-pointer transition-colors z-20 group relative select-none"
         title="마크다운 에디터 펼치기"
       >
-        <div className="p-1.5 bg-[#111827] text-white rounded-[4px] group-hover:scale-105 transition-transform mb-6">
-          <FileEdit size={16} />
+        {/* 최상단: 로고 및 PRD 세로 텍스트 */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="p-1.5 bg-[#111827] text-white rounded-[4px] group-hover:scale-105 transition-transform">
+            <FileEdit size={16} />
+          </div>
+
+          <div className="flex flex-col items-center text-[11px] font-extrabold text-[#4B5563] group-hover:text-[#111827] leading-tight tracking-tight uppercase">
+            <span>P</span>
+            <span>R</span>
+            <span>D</span>
+          </div>
         </div>
-        <div className="writing-mode-vertical text-[12px] font-bold text-[#4B5563] tracking-widest uppercase flex items-center gap-2 select-none">
-          <span>PRD EDITOR</span>
+
+        {/* 중앙: 좌측 화살표 아이콘 */}
+        <div className="absolute top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white border border-[#E5E7EB] shadow-xs group-hover:border-[#3B82F6] group-hover:bg-[#EFF6FF] transition-all">
+          <ChevronLeft size={16} className="text-[#6B7280] group-hover:text-[#3B82F6] group-hover:-translate-x-0.5 transition-transform" />
         </div>
       </aside>
     );
@@ -150,11 +220,10 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
               onCommitLog?.();
               setActiveTab('editor');
             }}
-            className={`px-3 py-1.5 font-bold rounded-t-[4px] border-t border-x transition-all ${
-              activeTab === 'editor'
+            className={`px-3 py-1.5 font-bold rounded-t-[4px] border-t border-x transition-all ${activeTab === 'editor'
                 ? 'bg-white border-[#E5E7EB] border-b-white text-[#111827]'
                 : 'border-transparent text-[#6B7280] hover:text-[#111827]'
-            }`}
+              }`}
           >
             마크다운 작성/수정
           </button>
@@ -163,11 +232,10 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
               onCommitLog?.();
               setActiveTab('briefing');
             }}
-            className={`px-3 py-1.5 font-bold rounded-t-[4px] border-t border-x transition-all flex items-center gap-1.5 ${
-              activeTab === 'briefing'
+            className={`px-3 py-1.5 font-bold rounded-t-[4px] border-t border-x transition-all flex items-center gap-1.5 ${activeTab === 'briefing'
                 ? 'bg-white border-[#E5E7EB] border-b-white text-[#111827]'
                 : 'border-transparent text-[#6B7280] hover:text-[#111827]'
-            }`}
+              }`}
           >
             <History size={13} className="text-[#3B82F6]" />
             <span>변경 로그 ({changeLogs.length})</span>
@@ -178,10 +246,10 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
           <button
             onClick={onCopyMarkdown}
             className="px-2.5 py-1 text-[11px] font-bold text-white bg-[#3B82F6] hover:bg-[#2563EB] rounded-[4px] transition-all flex items-center gap-1 cursor-pointer"
-            title="AI 에이전트 전달용 클립보드 복사"
+            title="클립보드 복사"
           >
             {isCopied ? <Check size={12} /> : <Copy size={12} />}
-            <span>{isCopied ? '복사완료' : '마크다운 복사'}</span>
+            <span>{isCopied ? '복사완료' : '복사하기'}</span>
           </button>
         </div>
       </div>
@@ -222,17 +290,74 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
             </div>
           </div>
 
-          <textarea
-            value={markdown}
-            onChange={(e) => onChangeMarkdown(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={() => onCommitLog?.()}
-            onClick={handleCursorOrBlurCheck}
-            onKeyUp={handleCursorOrBlurCheck}
-            placeholder="마크다운 PRD를 입력하거나 수정하세요... (예: ├─ QuoteCard)"
-            className="flex-1 w-full p-3 font-mono text-[13px] leading-relaxed text-[#1F2937] bg-[#F9FAFB] border border-[#E5E7EB] rounded-[4px] focus:outline-none focus:border-[#3B82F6] focus:bg-white resize-none"
-            spellCheck={false}
-          />
+          {/* VSCode 스타일 에디터: 거터(줄번호+diff마커) + textarea */}
+          <div className="flex-1 flex border border-[#E5E7EB] rounded-[4px] overflow-hidden focus-within:border-[#3B82F6]">
+            {/* 거터: 줄번호 + diff 색상 마커 (스크롤 동기화) */}
+            <div
+              ref={gutterRef}
+              className="shrink-0 overflow-hidden select-none bg-[#F9FAFB] border-r border-[#E5E7EB] pt-3"
+              style={{ width: 44 }}
+              aria-hidden
+            >
+              {currentLines.map((_, idx) => {
+                const lineNo = idx + 1;
+                const diffType = lineDiffMap.get(lineNo);
+                let gutterBg = '';
+                let markerColor = 'transparent';
+                if (diffType === 'added') {
+                  gutterBg = 'bg-[#dcfce7]';
+                  markerColor = '#16a34a';
+                } else if (diffType === 'modified') {
+                  gutterBg = 'bg-[#fef9c3]';
+                  markerColor = '#ca8a04';
+                }
+                return (
+                  <div
+                    key={lineNo}
+                    className={`flex items-start justify-end gap-0.5 pr-1 ${gutterBg}`}
+                    style={{
+                      height: lineHeights[idx] ?? LINE_HEIGHT,
+                      minHeight: LINE_HEIGHT,
+                      fontSize: 10,
+                      lineHeight: `${LINE_HEIGHT}px`,
+                      paddingTop: 0,
+                    }}
+                  >
+                    {diffType && (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: 3,
+                          height: 14,
+                          borderRadius: 2,
+                          backgroundColor: markerColor,
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
+                    <span className="font-mono text-[#9CA3AF]" style={{ fontSize: 10 }}>
+                      {lineNo}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 실제 편집 textarea */}
+            <textarea
+              ref={textareaRef}
+              value={markdown}
+              onChange={(e) => onChangeMarkdown(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={() => onCommitLog?.()}
+              onClick={handleCursorOrBlurCheck}
+              onScroll={handleScroll}
+              placeholder="마크다운 PRD를 입력하거나 수정하세요... (예: ├─ QuoteCard)"
+              className="flex-1 w-full p-3 font-mono text-[13px] text-[#1F2937] bg-[#F9FAFB] focus:outline-none focus:bg-white resize-none"
+              style={{ lineHeight: `${LINE_HEIGHT}px` }}
+              spellCheck={false}
+            />
+          </div>
         </div>
       )}
 
@@ -281,11 +406,10 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
                           <div key={i} className="p-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded font-mono text-[11px] space-y-1">
                             <div className="font-bold text-[#2563EB] flex items-center justify-between text-[10px]">
                               <span>{change.lineNo}번째 줄</span>
-                              <span className={`px-1 py-0.2 rounded font-semibold uppercase ${
-                                change.type === 'added' ? 'bg-[#DCFCE7] text-[#15803D]' :
-                                change.type === 'removed' ? 'bg-[#FEE2E2] text-[#B91C1C]' :
-                                'bg-[#FEF3C7] text-[#B45309]'
-                              }`}>
+                              <span className={`px-1 py-0.2 rounded font-semibold uppercase ${change.type === 'added' ? 'bg-[#DCFCE7] text-[#15803D]' :
+                                  change.type === 'removed' ? 'bg-[#FEE2E2] text-[#B91C1C]' :
+                                    'bg-[#FEF3C7] text-[#B45309]'
+                                }`}>
                                 {change.type === 'added' ? '추가됨' : change.type === 'removed' ? '삭제됨' : '수정됨'}
                               </span>
                             </div>
@@ -317,42 +441,8 @@ export const MarkdownEditorPopup: React.FC<MarkdownEditorPopupProps> = ({
               ))}
             </div>
           )}
-
-          {/* AI 브리핑 카드 */}
-          <div className="pt-3 border-t border-[#E5E7EB]">
-            <button
-              onClick={onRequestAiBriefing}
-              disabled={isAiLoading}
-              className="w-full py-2 bg-white border border-[#E5E7EB] hover:bg-[#F9FAFB] text-[#3B82F6] rounded-[6px] text-[12px] font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
-            >
-              <Sparkles size={14} className={isAiLoading ? 'animate-spin' : ''} />
-              <span>{isAiLoading ? 'AI 브리핑 분석 중...' : 'AI 변경사항 요약받기 (Gemini)'}</span>
-            </button>
-            {aiBriefingText && (
-              <div className="mt-3 p-3.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-[6px] space-y-1.5 shadow-xs">
-                <div className="flex items-center gap-1.5 text-[#1E40AF] font-bold text-[12px]">
-                  <Sparkles size={14} />
-                  <span>AI 분석 결과</span>
-                </div>
-                <div className="text-[12px] leading-relaxed text-[#1E3A8A] whitespace-pre-wrap">
-                  {aiBriefingText}
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       )}
-
-      {/* 패널 푸터 */}
-      <div className="p-2.5 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between text-[11px] text-[#6B7280] shrink-0">
-        <span>💡 1인 기획자용 AI 에이전트(Cursor, Windsurf) 호환 규격</span>
-        <button
-          onClick={onCopyMarkdown}
-          className="font-bold text-[#3B82F6] hover:underline cursor-pointer"
-        >
-          [최종 PRD 복사하기]
-        </button>
-      </div>
     </aside>
   );
 };

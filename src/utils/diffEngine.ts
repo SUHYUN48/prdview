@@ -43,7 +43,7 @@ export function computePRDDiff(current: ParsedPRD, previous?: ParsedPRD): DiffRe
     } else {
       // 컴포넌트 및 마크다운 원문 비교
       const isRawChanged = currScreen.rawMarkdown.trim() !== prevScreen.rawMarkdown.trim();
-      
+
       // 노드 세부 비교
       const nodeDiffChanged = diffNodeTrees(currScreen.nodes, prevScreen.nodes, addedComponents, modifiedComponents, removedComponents);
 

@@ -1,31 +1,22 @@
 import React from 'react';
-import { SamplePRDOption } from '../types';
-import { Layers, FileEdit, Sparkles, Eye, RefreshCw } from 'lucide-react';
+import { Layers, Sparkles, Eye, RefreshCw, Copy, Check } from 'lucide-react';
 
 interface TopHeaderProps {
   appTitle: string;
-  samplePrds: SamplePRDOption[];
-  activeSampleId: string;
-  onSelectSample: (sampleId: string) => void;
-  highlightDiff: boolean;
-  onToggleHighlightDiff: () => void;
-  isEditorOpen: boolean;
-  onToggleEditor: () => void;
+  isEditorOpen?: boolean;
+  onToggleEditor?: () => void;
   onOpenBriefingModal: () => void;
-  onResetToSample: () => void;
+  onCopySampleMarkdown: () => void;
+  isSampleCopied: boolean;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
   appTitle,
-  samplePrds,
-  activeSampleId,
-  onSelectSample,
-  highlightDiff,
-  onToggleHighlightDiff,
   isEditorOpen,
   onToggleEditor,
   onOpenBriefingModal,
-  onResetToSample
+  onCopySampleMarkdown,
+  isSampleCopied
 }) => {
   return (
     <header className="sticky top-0 z-30 h-14 bg-white text-[#1F2937] border-b border-[#E5E7EB] px-4 md:px-6 flex items-center justify-between shadow-xs select-none">
@@ -45,49 +36,25 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </div>
         </div>
 
-        {/* 템플릿 셀렉터 */}
+        {/* 샘플 복사 버튼 */}
         <div className="hidden md:flex items-center gap-2 border-l border-[#E5E7EB] pl-4 ml-2">
-          <span className="text-[11px] text-[#6B7280] font-medium">예시 PRD:</span>
-          <select
-            value={activeSampleId}
-            onChange={(e) => onSelectSample(e.target.value)}
-            className="bg-[#F9FAFB] text-[#1F2937] text-[12px] font-medium border border-[#E5E7EB] rounded-[4px] px-2.5 py-1 focus:outline-none focus:border-[#3B82F6] transition-colors cursor-pointer"
-          >
-            {samplePrds.map((s) => (
-              <option key={s.id} value={s.id}>
-                [{s.badge}] {s.title}
-              </option>
-            ))}
-          </select>
           <button
-            onClick={onResetToSample}
-            className="p-1 text-[#6B7280] hover:text-[#1F2937] transition-colors"
-            title="현재 PRD 원본으로 되돌리기"
+            onClick={onCopySampleMarkdown}
+            className={`px-2.5 py-1 text-[11px] font-bold border rounded-[4px] transition-all flex items-center gap-1 cursor-pointer shadow-xs ${
+              isSampleCopied 
+                ? 'bg-[#E8F5E9] text-[#2E7D32] border-[#C8E6C9]' 
+                : 'bg-white hover:bg-[#F9FAFB] text-[#4B5563] border-[#E5E7EB]'
+            }`}
+            title="대표 예시 PRD 마크다운 클립보드에 복사"
           >
-            <RefreshCw size={14} />
+            {isSampleCopied ? <Check size={12} /> : <Copy size={12} />}
+            <span>{isSampleCopied ? '복사 완료!' : '샘플 복사'}</span>
           </button>
         </div>
       </div>
 
       {/* 우측 컨트롤 바 */}
       <div className="flex items-center gap-2 md:gap-2.5">
-        {/* Diff 하이라이트 토글 */}
-        <button
-          onClick={onToggleHighlightDiff}
-          className={`px-3 py-1.5 rounded-[6px] text-[12px] font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
-            highlightDiff
-              ? 'bg-[#10B981] text-white border-[#10B981] shadow-xs'
-              : 'bg-[#F3F4F6] text-[#4B5563] border-[#E5E7EB] hover:bg-[#E5E7EB]'
-          }`}
-          title="변경 사항 시각적 하이라이트(Visual Diff) 켜기/끄기"
-        >
-          <Eye size={14} />
-          <span className="hidden sm:inline">Visual Diff</span>
-          <span className="text-[10px] uppercase font-bold px-1 py-0.2 bg-white/20 rounded">
-            {highlightDiff ? 'ON' : 'OFF'}
-          </span>
-        </button>
-
         {/* AI 변경 사항 브리핑 버튼 */}
         <button
           onClick={onOpenBriefingModal}
@@ -95,22 +62,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           title="PRD 변경 사항 요약 브리핑 보기"
         >
           <Sparkles size={14} className="text-[#3B82F6]" />
-          <span className="hidden sm:inline">AI Briefing</span>
+          <span className="hidden sm:inline">AI 요약</span>
         </button>
 
 
-        {/* 마크다운 에디터 토글 버튼 */}
-        <button
-          onClick={onToggleEditor}
-          className={`px-3 py-1.5 rounded-[6px] text-[12px] font-semibold transition-all flex items-center gap-1.5 border cursor-pointer ${
-            isEditorOpen
-              ? 'bg-[#111827] text-white border-[#111827]'
-              : 'bg-white text-[#374151] border-[#E5E7EB] hover:bg-[#F3F4F6]'
-          }`}
-        >
-          <FileEdit size={14} />
-          <span>Editor</span>
-        </button>
       </div>
     </header>
   );

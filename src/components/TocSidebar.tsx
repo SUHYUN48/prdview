@@ -52,8 +52,6 @@ export const TocSidebar: React.FC<TocSidebarProps> = ({
           ) : (
             screens.map((s, index) => {
               const isActive = activeScreenId === s.id;
-              const isAdded = s.diffStatus === 'added';
-              const isModified = s.diffStatus === 'modified';
               const level = s.level || 2;
 
               // 헤딩 레벨 (#, ##, ###)에 따른 노션 스타일 들여쓰기(Padding)
@@ -73,18 +71,6 @@ export const TocSidebar: React.FC<TocSidebarProps> = ({
                   <div className="flex items-center min-w-0 pr-1">
                     <span className="text-[13px] truncate tracking-tight">{s.title}</span>
                   </div>
-
-                  {/* 변경 상태 표시 도트/배지 */}
-                  {isAdded && (
-                    <span className="px-1.5 py-0.2 text-[9px] font-bold text-white bg-[#10B981] rounded-full shrink-0">
-                      NEW
-                    </span>
-                  )}
-                  {isModified && (
-                    <span className="px-1.5 py-0.2 text-[9px] font-bold text-[#10B981] bg-[#ECFDF5] border border-[#10B981] rounded-full shrink-0">
-                      MOD
-                    </span>
-                  )}
                 </button>
               );
             })

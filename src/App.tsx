@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { SAMPLE_PRDS } from './data/samplePrds';
+import { REPRESENTATIVE_PRD_MARKDOWN } from './data/samplePrds';
 import { parsePRDMarkdown } from './utils/markdownParser';
 import { computePRDDiff, computeLineDiff } from './utils/diffEngine';
 import { TopHeader } from './components/TopHeader';
@@ -12,16 +12,35 @@ import { Layers, FileEdit, Sparkles, HelpCircle, ArrowUp, Info } from 'lucide-re
 import { ChangeLogItem } from './types';
 
 export default function App() {
-  // 선택된 샘플 PRD ID
-  const [selectedSampleId, setSelectedSampleId] = useState<string>('prdview-main');
+  // 캔버스 편집 → 마크다운 역방향 동기화 플래그 (편집 루프 방지)
+  const isUpdatingFromCanvas = React.useRef(false);
+  // 선택된 샘플 PRD ID 삭제
 
-  // 현재 마크다운 텍스트 및 이전 마크다운 텍스트 (Diff 계산용)
-  const initialSample = SAMPLE_PRDS.find(s => s.id === 'prdview-main') || SAMPLE_PRDS[0];
-  const [currentMarkdown, setCurrentMarkdown] = useState<string>(initialSample.markdown);
-  const [previousMarkdown, setPreviousMarkdown] = useState<string>(initialSample.markdown);
+  // 현재 마크다운 텍스트, 이전 마크다운 텍스트, 초기 샘플 마크다운 텍스트 (초기 상태는 비어있음)
+  const [currentMarkdown, setCurrentMarkdown] = useState<string>('');
+  const [previousMarkdown, setPreviousMarkdown] = useState<string>('');
+  const [initialMarkdown, setInitialMarkdown] = useState<string>('');
+  const [isSampleCopied, setIsSampleCopied] = useState<boolean>(false);
+
+  // 대표 샘플 PRD 클립보드 복사 처리
+  const handleCopySampleMarkdown = () => {
+    const textToCopy = REPRESENTATIVE_PRD_MARKDOWN;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(textToCopy);
+    } else {
+      const textarea = document.createElement('textarea');
+      textarea.value = textToCopy;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setIsSampleCopied(true);
+    setTimeout(() => setIsSampleCopied(false), 2000);
+  };
 
   // UI 상태들
-  const [highlightDiff, setHighlightDiff] = useState<boolean>(true);
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(true);
   const [isBriefingModalOpen, setIsBriefingModalOpen] = useState<boolean>(false);
 
@@ -52,6 +71,14 @@ export default function App() {
   // 변경사항을 1개의 커밋 로그로 확정(Commit)
   const handleCommitLog = React.useCallback(() => {
     if (currentMarkdown === previousMarkdown) return;
+
+    // 만약 이전 텍스트가 비어있었다면 (앱 초기화 후 최초 붙여넣기/입력), 
+    // 전체가 '추가됨'으로 거대한 로그가 쌓이는 것을 방지하고 기준점(baseline)으로 설정합니다.
+    if (previousMarkdown.trim() === '') {
+      setPreviousMarkdown(currentMarkdown);
+      setInitialMarkdown(currentMarkdown);
+      return;
+    }
 
     const lineChanges = computeLineDiff(previousMarkdown, currentMarkdown);
     if (lineChanges.length > 0) {
@@ -90,6 +117,37 @@ export default function App() {
     lastLoggedSummaryRef.current = '';
   };
 
+  /**
+   * 캔버스에서 텍스트를 직접 편집했을 때 currentMarkdown에 반영.
+   * rawSection: 해당 섹션의 rawMarkdown (교체 범위 특정용)
+   * oldText: 교체 전 원본 텍스트
+   * newText: 교체 후 새 텍스트
+   */
+  const handleCanvasEdit = React.useCallback(
+    (rawSection: string, oldText: string, newText: string) => {
+      if (oldText === newText) return;
+      isUpdatingFromCanvas.current = true;
+      setCurrentMarkdown(prev => {
+        // rawSection이 prev 안에 있는 위치를 찾아 그 범위 안에서만 교체
+        const sectionStart = prev.indexOf(rawSection);
+        if (sectionStart === -1) {
+          // fallback: 전체에서 첫 번째 일치 교체
+          return prev.replace(oldText, newText);
+        }
+        const before = prev.slice(0, sectionStart);
+        const section = prev.slice(sectionStart, sectionStart + rawSection.length);
+        const after = prev.slice(sectionStart + rawSection.length);
+        const updatedSection = section.replace(oldText, newText);
+        return before + updatedSection + after;
+      });
+      // 다음 렌더 사이클에서 플래그 해제
+      requestAnimationFrame(() => {
+        isUpdatingFromCanvas.current = false;
+      });
+    },
+    []
+  );
+
   // 첫 번째 화면을 초기 활성 화면으로 설정
   useEffect(() => {
     if (parsedCurrent.screens.length > 0 && !activeScreenId) {
@@ -97,28 +155,6 @@ export default function App() {
     }
   }, [parsedCurrent]);
 
-  // 샘플 변경 함수
-  const handleSelectSample = (sampleId: string) => {
-    const sample = SAMPLE_PRDS.find(s => s.id === sampleId);
-    if (sample) {
-      setSelectedSampleId(sampleId);
-      setPreviousMarkdown(sample.markdown);
-      setCurrentMarkdown(sample.markdown);
-      setAiBriefingText(null);
-      handleClearLogs();
-    }
-  };
-
-  // 원본 되돌리기
-  const handleResetToSample = () => {
-    const sample = SAMPLE_PRDS.find(s => s.id === selectedSampleId);
-    if (sample) {
-      setCurrentMarkdown(sample.markdown);
-      setPreviousMarkdown(sample.markdown);
-      setAiBriefingText(null);
-      handleClearLogs();
-    }
-  };
 
   // 마크다운 복사 처리
   const handleCopyMarkdown = () => {
@@ -149,15 +185,29 @@ export default function App() {
   const handleRequestAiBriefing = async () => {
     setIsAiLoading(true);
     try {
+      const parsedInit = parsePRDMarkdown(initialMarkdown);
+      const diffInit = computePRDDiff(parsedCurrent, parsedInit);
+      const lineChanges = computeLineDiff(initialMarkdown, currentMarkdown);
+
+      let summaryForBriefing = diffInit.summaryText;
+
+      // 구조적 변경이 없더라도 마크다운 텍스트 변경점이 있으면 요약 정보 구성
+      if (!diffInit.hasChanges && lineChanges.length > 0) {
+        const addedLines = lineChanges.filter(c => c.type === 'added').length;
+        const modifiedLines = lineChanges.filter(c => c.type === 'modified').length;
+        const removedLines = lineChanges.filter(c => c.type === 'removed').length;
+        summaryForBriefing = `📝 **마크다운 텍스트 수정**: (수정된 줄: ${modifiedLines}개, 추가된 줄: ${addedLines}개, 삭제된 줄: ${removedLines}개)`;
+      }
+
       const res = await fetch('/api/briefing', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          oldMarkdown: previousMarkdown,
+          oldMarkdown: initialMarkdown,
           newMarkdown: currentMarkdown,
-          diffSummary: diffResult.summaryText
+          diffSummary: summaryForBriefing
         })
       });
       const data = await res.json();
@@ -173,20 +223,21 @@ export default function App() {
     }
   };
 
+  const handleOpenBriefingModal = () => {
+    setIsBriefingModalOpen(true);
+    handleRequestAiBriefing();
+  };
+
   return (
     <div className="min-h-screen bg-dot-grid text-[#1F2937] font-sans antialiased flex flex-col selection:bg-[#3B82F6] selection:text-white">
       {/* 최상단 헤더 */}
       <TopHeader
         appTitle="PRDView"
-        samplePrds={SAMPLE_PRDS}
-        activeSampleId={selectedSampleId}
-        onSelectSample={handleSelectSample}
-        highlightDiff={highlightDiff}
-        onToggleHighlightDiff={() => setHighlightDiff(!highlightDiff)}
         isEditorOpen={isEditorOpen}
         onToggleEditor={() => setIsEditorOpen(!isEditorOpen)}
-        onOpenBriefingModal={() => setIsBriefingModalOpen(true)}
-        onResetToSample={handleResetToSample}
+        onOpenBriefingModal={handleOpenBriefingModal}
+        onCopySampleMarkdown={handleCopySampleMarkdown}
+        isSampleCopied={isSampleCopied}
       />
 
       {/* 메인 레이아웃 (목차 패널 + 와이어프레임 캔버스) */}
@@ -219,33 +270,8 @@ export default function App() {
                 <div className="px-3 py-1.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-[4px]">
                   Screens: <strong className="text-[#111827]">{parsedCurrent.screens.length}</strong>
                 </div>
-                <div className="px-3 py-1.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-[4px]">
-                  Status:{' '}
-                  <strong className={diffResult.hasChanges ? 'text-[#10B981]' : 'text-[#3B82F6]'}>
-                    {diffResult.hasChanges ? 'MODIFIED' : 'UP-TO-DATE'}
-                  </strong>
-                </div>
               </div>
             </div>
-
-            {/* 변경 사항이 감지되었을 때 상단 알림 바 */}
-            {diffResult.hasChanges && highlightDiff && (
-              <div className="mt-4 p-3 bg-[#ECFDF5] border border-[#10B981] rounded-[6px] flex items-center justify-between text-[13px] text-[#065F46]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse" />
-                  <span>
-                    기획 변경 사항이 감지되었습니다. 와이어프레임 박스에{' '}
-                    <strong className="text-[#10B981] font-extrabold">그린 시각적 하이라이트</strong>로 표기됩니다.
-                  </span>
-                </div>
-                <button
-                  onClick={() => setIsBriefingModalOpen(true)}
-                  className="font-bold text-[#10B981] hover:underline shrink-0 text-[12px] cursor-pointer"
-                >
-                  [변경 요약 보기]
-                </button>
-              </div>
-            )}
           </div>
 
           {/* 화면 카드 들 렌더링 */}
@@ -262,7 +288,7 @@ export default function App() {
               <ScreenCard
                 key={screen.id}
                 screen={screen}
-                highlightDiff={highlightDiff}
+                onCanvasEdit={handleCanvasEdit}
               />
             ))
           )}
@@ -273,6 +299,7 @@ export default function App() {
           isOpen={isEditorOpen}
           onClose={() => setIsEditorOpen(!isEditorOpen)}
           markdown={currentMarkdown}
+          baselineMarkdown={initialMarkdown}
           onChangeMarkdown={(val) => setCurrentMarkdown(val)}
           summaryText={diffResult.summaryText}
           changeLogs={changeLogs}
